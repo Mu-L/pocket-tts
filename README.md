@@ -28,6 +28,8 @@ Supports Python 3.10, 3.11, 3.12, 3.13 and 3.14. Requires PyTorch 2.5+. Does not
 * Can handle infinitely long text inputs
 * [Can run on client-side in the browser](#in-browser-implementations)
 
+More languages are planned: See our [official announcement](https://github.com/kyutai-labs/pocket-tts/issues/118)
+
 ## Trying it from the website, without installing anything
 
 Navigate to the [Kyutai website](https://kyutai.org/pocket-tts) to try it out directly in your browser. You can input text, select different voices, and generate speech without any installation.
