@@ -44,6 +44,7 @@ Navigate to the [Kyutai website](https://kyutai.org/pocket-tts) to try it out di
 You can use pocket-tts directly from the command line. We recommend using
 `uv` as it installs any dependencies on the fly in an isolated environment (uv installation instructions [here](https://docs.astral.sh/uv/getting-started/installation/#standalone-installer)).
 You can also use `pip install pocket-tts` to install it manually.
+On Linux, see [CPU-only installation](#cpu-only-installation) to avoid pulling in the CUDA build of PyTorch.
 
 This will generate a wav file `./tts_output.wav` saying the default text with the default voice, and display some speed statistics.
 ```bash
@@ -119,6 +120,34 @@ pip install pocket-tts
 # or
 uv add pocket-tts
 ```
+
+### CPU-only installation
+
+On Linux, PyPI serves the CUDA build of PyTorch by default, so `pip install pocket-tts` also
+downloads the `nvidia-*` CUDA runtime wheels, even though pocket-tts runs on CPU. This adds
+several gigabytes to the install (with torch 2.13, roughly 3 GB instead of 200 MB). Installing
+from the PyTorch CPU index pulls the CPU build and no NVIDIA packages:
+```bash
+pip install pocket-tts --extra-index-url https://download.pytorch.org/whl/cpu
+```
+
+To run the CLI without installing, pass the same index to `uvx`:
+```bash
+uvx --index https://download.pytorch.org/whl/cpu pocket-tts generate
+```
+
+With `uv`, declare the index explicitly in your project:
+```toml
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
+
+[tool.uv.sources]
+torch = [{ index = "pytorch-cpu" }]
+```
+
+This is not needed on macOS or Windows, where the default PyTorch wheels are already CPU-only.
 
 You can use this package as a simple Python library to generate audio from text.
 ```python
