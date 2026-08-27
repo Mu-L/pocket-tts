@@ -41,7 +41,7 @@ Now in detail:
 ## Installation
 
 Requirements:
-- Linux - we don't provide official support for Windows/Mac training, but will accept bugfix PRs
+- Linux - we don't provide official support for Windows/Mac training, we don't have the hardware or time to support those plaforms.
 - One NVIDIA GPU (the default batch size wants ~56 GB; a consumer GPU runs `batch_size: 16` with
   `grad_accum_steps: 4` in ~16 GB); you can use more GPUs to train faster
 - Python 3.10+ and [uv](https://docs.astral.sh/uv/)
