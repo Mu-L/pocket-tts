@@ -31,7 +31,7 @@ from torch.nn.parallel import DistributedDataParallel as DDP
 
 from training.args import TrainArgs, dump_args, load_args, save_args
 from training.checkpointing import EMA, latest_checkpoint, load_checkpoint, save_checkpoint
-from training.dataloader import DataLoader, encode_batch
+from training.dataloader import DataLoader, SubprocessDataLoader, encode_batch
 from training.distributed import (
     avg_across_ranks,
     get_rank,
@@ -163,11 +163,12 @@ def main(config_path: str) -> None:
     optimizer, ema, device, rank = run.optimizer, run.ema, run.device, run.rank
     progress, start_step = run.progress, run.start_step
 
-    tokenize = model.flow_lm.conditioner.tokenizer.sp.encode
+    sentence_piece = model.flow_lm.conditioner.tokenizer.sp
+    tokenize = sentence_piece.encode
     train_loader = iter(
-        DataLoader(
+        SubprocessDataLoader(
             args.data.train_jsonl,
-            tokenize,
+            sentence_piece,
             args.batch_size,
             mimi.sample_rate,
             mimi.frame_rate,
@@ -175,8 +176,9 @@ def main(config_path: str) -> None:
             args.data.max_voice_prompt_sec,
             rank,
             run.world_size,
-            seed=args.seed + rank,
+            seed=args.seed,
             shuffle=args.data.shuffle,
+            num_procs=args.data.loader_procs,
         )
     )
 
