@@ -45,6 +45,7 @@ from training.train_utils import (
     ProgressLog,
     _compile_models,
     add_file_logging,
+    ensure_train_latents,
     git_commit,
     lr_at,
     setup_logging,
@@ -103,13 +104,19 @@ def setup(config_path: str) -> Run:
                 "    python -m training.scripts.prepare_data --hours 200\n"
                 "or point data.train_jsonl / data.valid_jsonl at your own manifests."
             )
-
+    if args.data.valid_jsonl and Path(args.data.valid_jsonl).with_suffix(".meta.json").exists():
+        raise SystemExit(
+            f"valid_jsonl is a precomputed-latents manifest: {args.data.valid_jsonl}\n"
+            "Validation must encode audio directly so its metrics stay exact and "
+            "comparable; point valid_jsonl at the original manifest."
+        )
     if rank == 0:
         save_args(args, run_dir / "args.yaml")
 
     model, mimi, _config = build_models(args)
     model.to(device)
     mimi.to(device)
+    ensure_train_latents(args, mimi, device, rank, world_size)
     n_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
     if rank == 0:
         logger.info(f"flow_lm + objective: {n_params / 1e6:.1f}M trainable params")
@@ -249,7 +256,8 @@ def main(config_path: str) -> None:
             logger.info(f"per-step logging done, logging every {args.log_freq} steps from now on")
 
         if sample_voice is None:
-            sample_voice = voice_prompt_latents[0].detach().clone()
+            n = int(num_voice_prompt_frames[0])
+            sample_voice = voice_prompt_latents[0, :n].detach().clone()
         if (
             rank == 0
             and args.sample_sentences
