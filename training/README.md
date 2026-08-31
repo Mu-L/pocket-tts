@@ -8,7 +8,7 @@ We're happy to feature community-trained models in the [list of community-traine
 
 First, the minimal setup necessary to train a simple model – we'll talk about each of these steps in more detail below.
 This will give you a 24-layer model trained on 200h of English data.
-It won't be best model in the world, but it'll produce intelligible speech, and demonstrate the training process.
+It won't be the best model in the world, but it'll produce intelligible speech, and demonstrate the training process.
 You can later re-run with 2000h of data to get results on par with the official model.
 
 Downloading and preparing data (around 15 GB):
@@ -41,7 +41,7 @@ Now in detail:
 ## Installation
 
 Requirements:
-- Linux - we don't provide official support for Windows/Mac training, we don't have the hardware or time to support those plaforms.
+- Linux - we don't provide official support for Windows/Mac training, as we don't have the hardware or time to support those platforms.
 - One NVIDIA GPU (the default batch size wants ~56 GB; a consumer GPU runs `batch_size: 16` with
   `grad_accum_steps: 4` in ~16 GB); you can use more GPUs to train faster
 - Python 3.10+ and [uv](https://docs.astral.sh/uv/)
@@ -132,13 +132,9 @@ Here are some common issues and solutions:
 - As mentioned, you should aim for 1000+ hours of data, 100 hours is a minimum.
 - If the TTS is good acoustically but doesn't follow the transcript: it means your transcripts are inaccurate. Prefer hand-transcribed data over automatically-transcribed if possible.
 - If your outputs sound noisy/low-quality: This is the acoustic quality of your voice prompt, and the model learns to mimic it. This can be solved at inference time by using a "clean" voice prompt. (You could also train the model to clean up the voice automatically, but this is out of the scope of this README.)
-- Your model doesn't do well on a certain kind of voice (e.g. high-pitched, or a specific accent): it means those voices are under-represented in the dataset
+- Your model doesn't do well on a certain kind of voice (e.g. high-pitched, or a specific accent): it means those voices are under-represented in the dataset.
 - If your model is generating speech that cuts off part of the first or last word: the issue is probably with your alignment.
-- If your model sounds like somebody is reading from a book: can be due to the training dataset (audiobooks like LibriVox), the voice prompt, or both.
-
-For a corpus in another language, see
-[Non-English training](#non-english-training): the aligner and the tokenizer
-both have to be swapped for that language.
+- If your model sounds like somebody is reading from a book: this can be due to the training dataset (audiobooks like LibriVox), the voice prompt, or both.
 
 ## Train
 
@@ -152,15 +148,13 @@ uv run torchrun --nproc-per-node 8 training/train.py training/configs/scratch.ya
 The training is configured using a single YAML file.
 The official Pocket TTS training happens in two steps, corresponding to the two YAMLs we provide:
 - `scratch.yaml`: trains a 24-layer teacher from scratch
-- `depth_distill.yaml`: distils that teacher into a 6-layer student. This also bakes in classifier-free guidance (CFG), see [paper](https://arxiv.org/abs/2207.12598) or [explanation](https://youtu.be/iv-5mZ_9CPY?t=1797).
+- `depth_distill.yaml`: distills that teacher into a 6-layer student. This also bakes in classifier-free guidance (CFG), see [paper](https://arxiv.org/abs/2207.12598) or [explanation](https://youtu.be/iv-5mZ_9CPY?t=1797).
 
-Two more configs cover finetuning: `finetune.yaml` continues a released model
-on more data in the same language (new voices, a new domain), and
-`finetune_language.yaml` starts the teacher from
-released weights for a new language, initialising the text embedding fresh (the
-tokenizer differs) while the backbone transfers. On Czech the latter reached the
-same WER as a scratch run about 2.5x sooner.
+If you want to finetune from the English teacher model, we provide two more configs:
+- `finetune.yaml`: continues from the pretrained English teacher, useful if you want to finetune on more data in the same language (new voices, a new domain).
+- `finetune_language.yaml`: continues from the pretrained English teacher, but initialises the text embedding fresh (the text tokenizer differs). On Czech, it reached the same WER as a scratch run about 2.5x sooner.
 
+The two configs above will give you a teacher that you can then distil down to 6 layers.
 Training the model in two steps like this works better than training a 6-layer model from scratch.
 
 ### Reproducing our results
@@ -187,6 +181,14 @@ Precompute stores ~6 GB of latents per 1000 h of audio next to the manifest.
 `data.precompute: false` skips the precomputing, which will start training
 immediately but at slower speeds.
 
+And for the distillation step (`depth_distill.yaml`), here is the speed you
+can expect:
+
+| GPUs | per-GPU batch | steps/s | peak VRAM/GPU | 200k steps |
+|---|---|---|---|---|
+| 1 x H100 | 64 | 7.61 | 9.7 GiB | ~7.3 h |
+| 8 x H100 | 8 | 23.40 | 5.7 GiB | ~2.4 h |
+
 ### Training format
 
 By default, the training saves:
@@ -205,10 +207,10 @@ By default, the training saves:
     `-- ...
 ```
 
-`model.safetensors`: different than the `checkpoint_<N>.pt` checkpoints in two ways.
+`model.safetensors`: different from the `checkpoint_<N>.pt` checkpoints in two ways.
 One, it uses the format that the inference code (in the repo root) expects.
 And two, it's an exponential moving average of the model weights, averaged over training timesteps.
-EMA'ing the weights is a common technique to squeeze out a bit more performance out of models see e.g. [this](https://arxiv.org/html/2411.18704v1).
+EMA'ing the weights is a common technique to squeeze a bit more performance out of models, see e.g. [this](https://arxiv.org/html/2411.18704v1).
 
 `progress.jsonl`: We do not support experiment trackers like Tensorboard or Weights and Biases
 because it's easy to ask your coding agent to add support for whatever you like
