@@ -27,9 +27,9 @@ def increment_steps(module: nn.Module, model_state: ModelState, increment: int =
 
 
 class StatefulModule(ABC, nn.Module):
-    def __init__(self, *args, **kwds):
+    def __init__(self, *args: object, **kwds: object):
         self._module_absolute_name: str | None = None
-        return super().__init__(*args, **kwds)
+        super().__init__(*args, **kwds)
 
     @abstractmethod
     def init_state(self, batch_size: int, sequence_length: int) -> dict[str, torch.Tensor]:

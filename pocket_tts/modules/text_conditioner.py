@@ -22,7 +22,7 @@ class SentencePieceTokenizer:
 
     """
 
-    def __init__(self, nbins: int, tokenizer_path: str) -> None:
+    def __init__(self, nbins: int, tokenizer_path: str):
         logger.info("Loading sentencepiece tokenizer from %s", tokenizer_path)
         local_path = download_if_necessary(tokenizer_path)
         self.sp = sentencepiece.SentencePieceProcessor(str(local_path))

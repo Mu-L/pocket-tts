@@ -8,6 +8,7 @@ import sys
 from pathlib import Path
 
 import numpy as np
+import numpy.typing as npt
 import pytest
 import sentencepiece as spm
 import torch
@@ -68,7 +69,9 @@ def tiny_model(flow_type: str, context: int | None = None) -> TrainableTTS:
     return TrainableTTS(flow_lm, flow, args)
 
 
-def make_batch(B=3, T=11):
+def make_batch(
+    B: int = 3, T: int = 11
+) -> tuple[torch.Tensor, torch.Tensor, list[torch.Tensor], torch.Tensor]:
     latents = torch.randn(B, T, LDIM)
     mask = torch.arange(T)[None, :] < torch.tensor([T, T - 3, T - 5])[:, None]
     text = [torch.randint(0, 10, (n,)) for n in (4, 2, 6)]
@@ -77,7 +80,7 @@ def make_batch(B=3, T=11):
 
 
 @pytest.mark.parametrize("flow_type", ["lsd", "flow_matching"])
-def test_train_step(flow_type):
+def test_train_step(flow_type: str):
     model = tiny_model(flow_type)
     model.train()
     loss, metrics = model(*make_batch())
@@ -90,7 +93,7 @@ def test_train_step(flow_type):
 
 
 @pytest.mark.parametrize("flow_type,cfg", [("lsd", 1.0), ("flow_matching", 1.0)])
-def test_generate(flow_type, cfg):
+def test_generate(flow_type: str, cfg: float):
     model = tiny_model(flow_type)
     tokens = torch.randint(0, 10, (5,))
     voice = torch.randn(4, LDIM)
@@ -133,7 +136,7 @@ def test_cfg_distill():
 
 
 @pytest.mark.parametrize("num_time_conds", [0, 1, 2])
-def test_head_supports_every_time_cond_count(num_time_conds):
+def test_head_supports_every_time_cond_count(num_time_conds: int):
     """The head runs with 0, 1 or 2 time conditions."""
     head = SimpleMLPAdaLN(LDIM, 16, LDIM, DIM, 2, num_time_conds)
     assert len(head.time_embed) == num_time_conds
@@ -265,7 +268,7 @@ def test_ema_load_drops_untracked_keys():
         torch.testing.assert_close(model.state_dict()[k], v)
 
 
-def test_prefix_prompt(monkeypatch):
+def test_prefix_prompt(monkeypatch: pytest.MonkeyPatch):
     """The cut lands inside the window, the prompt is the utterance start,
     and the target keeps the rest of the utterance."""
     dl = DataLoader.__new__(DataLoader)
@@ -281,9 +284,9 @@ def test_prefix_prompt(monkeypatch):
     words = [{"word": f"w{i}", "start": float(i), "end": i + 0.8} for i in range(20)]
     entry = Entry(path="x", duration=20.0, transcript="t", words=words)
 
-    calls = []
+    calls: list[tuple[float, float]] = []
 
-    def fake_load_window(path, start, dur, sr):
+    def fake_load_window(path: str, start: float, dur: float, sr: int) -> npt.NDArray[np.float32]:
         calls.append((start, dur))
         return np.zeros(max(1, int(dur * sr)), dtype=np.float32)
 
@@ -298,7 +301,7 @@ def test_prefix_prompt(monkeypatch):
         assert t_dur >= 20.0 - 5.5 - 0.5, "target keeps most of the utterance"
 
 
-def test_train_tokenizer(tmp_path):
+def test_train_tokenizer(tmp_path: Path):
     manifest = tmp_path / "m.jsonl"
     lines = [
         json.dumps({"transcript": f"hello world number {i} testing tokenizers"}) for i in range(64)
@@ -329,7 +332,7 @@ def test_grad_accum_matches_big_batch():
     xs = torch.randn(8, 4)
     ys = torch.randn(8, 1)
 
-    def loss_of(x, y):
+    def loss_of(x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
         return torch.nn.functional.mse_loss(net(x), y, reduction="mean")
 
     def grad_of(p: torch.nn.Parameter) -> torch.Tensor:

@@ -4,9 +4,10 @@ import os
 import sys
 import tempfile
 import threading
+from collections.abc import Iterator
 from pathlib import Path
 from queue import Queue
-from typing import Annotated
+from typing import Annotated, BinaryIO, cast
 
 import typer
 import uvicorn
@@ -70,7 +71,7 @@ def _loaded_model() -> TTSModel:
 
 
 @web_app.get("/", response_class=HTMLResponse)
-async def root():
+async def root() -> str:
     """Serve the frontend."""
     static_path = Path(__file__).parent / "static" / "index.html"
     content = static_path.read_text()
@@ -82,18 +83,18 @@ async def root():
 
 
 @web_app.get("/health")
-async def health():
+async def health() -> dict[str, str]:
     return {"status": "healthy"}
 
 
-def write_to_queue(queue, text_to_generate, model_state):
+def write_to_queue(queue: Queue[bytes | None], text_to_generate: str, model_state: ModelState):
     """Allows writing to the StreamingResponse as if it were a file."""
 
     class FileLikeToQueue(io.IOBase):
-        def __init__(self, queue):
+        def __init__(self, queue: Queue[bytes | None]):
             self.queue = queue
 
-        def write(self, data):
+        def write(self, data: bytes):
             self.queue.put(data)
 
         def flush(self):
@@ -106,11 +107,14 @@ def write_to_queue(queue, text_to_generate, model_state):
     audio_chunks = model.generate_audio_stream(
         model_state=model_state, text_to_generate=text_to_generate
     )
-    stream_audio_chunks(FileLikeToQueue(queue), audio_chunks, model.config.mimi.sample_rate)
+    # FileLikeToQueue only implements the write/close subset that StreamingWAVWriter uses.
+    stream_audio_chunks(
+        cast(BinaryIO, FileLikeToQueue(queue)), audio_chunks, model.config.mimi.sample_rate
+    )
 
 
-def generate_data_with_state(text_to_generate: str, model_state: ModelState):
-    queue = Queue()
+def generate_data_with_state(text_to_generate: str, model_state: ModelState) -> Iterator[bytes]:
+    queue: Queue[bytes | None] = Queue()
 
     # Run your function in a thread
     thread = threading.Thread(target=write_to_queue, args=(queue, text_to_generate, model_state))
@@ -133,7 +137,7 @@ def text_to_speech(
     text: str = Form(...),
     voice_url: str | None = Form(None),
     voice_wav: UploadFile | None = File(None),
-):
+) -> StreamingResponse:
     """
     Generate speech from text using the pre-loaded voice prompt or a custom voice.
 

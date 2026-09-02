@@ -106,7 +106,7 @@ class StreamingTransformer(nn.Module):
             max_period=float(config.max_period),
         )
 
-    def forward(self, x: torch.Tensor, model_state: ModelState | None):
+    def forward(self, x: torch.Tensor, model_state: ModelState | None) -> torch.Tensor:
         attn_mask = None
         if model_state is None:
             # Stateless (training) path: one shared mask for all layers, built
@@ -153,7 +153,7 @@ class ProjectedTransformer(nn.Module):
             else:
                 self.output_projs.append(nn.Linear(d_model, output_dimension, bias=False))
 
-    def forward(self, x, model_state: ModelState | None):
+    def forward(self, x: torch.Tensor, model_state: ModelState | None) -> list[torch.Tensor]:
         x = x.transpose(1, 2)
         if self.input_proj is not None:
             x = self.input_proj(x)

@@ -80,7 +80,7 @@ class _LinearKVCacheBackend:
             ),
         )
 
-    def increment_step(self, state: dict[str, torch.Tensor], increment: int) -> None:
+    def increment_step(self, state: dict[str, torch.Tensor], increment: int):
         state["offset"] += increment
 
     def rope_offset(
@@ -172,7 +172,7 @@ class StreamingMultiheadAttention(StatefulModule):
         query: torch.Tensor,
         model_state: ModelState | None,
         attn_mask: torch.Tensor | None = None,
-    ):
+    ) -> torch.Tensor:
         state = None if model_state is None else self.get_state(model_state)
 
         projected = self.in_proj(query)

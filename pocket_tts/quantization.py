@@ -24,7 +24,7 @@ logger = logging.getLogger(__name__)
 RECOMMENDED_CONFIG = {"attention", "ffn"}
 
 
-def _get_backend():
+def _get_backend() -> str:
     """Detect the best available quantization backend.
 
     Returns "torchao" if torchao is installed with working C++ extensions,
@@ -94,7 +94,7 @@ def apply_dynamic_int8(flow_lm: FlowLMModel, quantize_groups: set[str]) -> FlowL
     return flow_lm
 
 
-def _apply_torchao(flow_lm: FlowLMModel, quantize_groups: set[str]) -> None:
+def _apply_torchao(flow_lm: FlowLMModel, quantize_groups: set[str]):
     """Apply quantization using torchao backend."""
     if "flow_net" in quantize_groups:
         _quantize_module_torchao(flow_lm.flow_net)
@@ -113,7 +113,7 @@ def _apply_torchao(flow_lm: FlowLMModel, quantize_groups: set[str]) -> None:
             layer.linear2 = wrapper2[0]
 
 
-def _apply_torch_ao(flow_lm: FlowLMModel, quantize_groups: set[str]) -> None:
+def _apply_torch_ao(flow_lm: FlowLMModel, quantize_groups: set[str]):
     """Apply quantization using deprecated torch.ao backend (fallback)."""
     from torch.ao.quantization import quantize_dynamic
 

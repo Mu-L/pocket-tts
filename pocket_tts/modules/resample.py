@@ -26,7 +26,7 @@ class ConvDownsample1d(nn.Module):
             pad_mode="replicate",
         )
 
-    def forward(self, x: torch.Tensor, model_state: ModelState | None):
+    def forward(self, x: torch.Tensor, model_state: ModelState | None) -> torch.Tensor:
         return self.conv(x, model_state)
 
 
@@ -48,5 +48,5 @@ class ConvTrUpsample1d(nn.Module):
             bias=False,
         )
 
-    def forward(self, x: torch.Tensor, model_state: ModelState | None):
+    def forward(self, x: torch.Tensor, model_state: ModelState | None) -> torch.Tensor:
         return self.convtr(x, model_state)

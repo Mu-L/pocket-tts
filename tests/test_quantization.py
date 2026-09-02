@@ -8,6 +8,8 @@ Verifies:
 4. Backend detection works
 """
 
+from pathlib import Path
+
 import torch
 from typer.testing import CliRunner
 
@@ -48,7 +50,7 @@ def test_quantize_flag_applies_quantization():
     )
 
 
-def test_cli_quantize_flag(tmp_path):
+def test_cli_quantize_flag(tmp_path: Path):
     output_file = tmp_path / "quantized_output.wav"
     result = runner.invoke(
         cli_app,

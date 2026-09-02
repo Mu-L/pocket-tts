@@ -2,9 +2,14 @@ import dataclasses
 import typing as tp
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import yaml
+
+if TYPE_CHECKING:
+    from _typeshed import DataclassInstance
+
+T = tp.TypeVar("T", bound="DataclassInstance")
 
 
 @dataclass
@@ -135,7 +140,7 @@ class TrainArgs:
     # the depth) or "first" (the bottom N). No evidence either way -- "first"
     # keeps the early feature extractors contiguous.
 
-    def __post_init__(self) -> None:
+    def __post_init__(self):
         if self.grad_accum_steps < 1:
             raise ValueError(f"grad_accum_steps must be >= 1, got {self.grad_accum_steps}")
         if self.num_ckpt_keep < 1:
@@ -157,7 +162,7 @@ class TrainArgs:
             raise ValueError("distill_teacher_config is set but distill_teacher_weights is not")
 
 
-def _from_dict(cls, data: dict[str, Any]):
+def _from_dict(cls: type[T], data: dict[str, Any]) -> T:
     sub = {"data": DataArgs, "flow": FlowArgs, "optim": OptimArgs}
     kwargs = {}
     fields = {f.name: f for f in dataclasses.fields(cls)}
@@ -187,7 +192,7 @@ def load_args(path: str | Path) -> TrainArgs:
 def dump_args(args: TrainArgs) -> str:
     """The resolved config (defaults included) as yaml."""
 
-    def plain(value):
+    def plain(value: object) -> object:
         if isinstance(value, Path):
             return str(value)
         if isinstance(value, dict):
@@ -199,6 +204,6 @@ def dump_args(args: TrainArgs) -> str:
     return yaml.safe_dump(plain(dataclasses.asdict(args)), sort_keys=False)
 
 
-def save_args(args: TrainArgs, path: str | Path) -> None:
+def save_args(args: TrainArgs, path: str | Path):
     with open(path, "w") as f:
         f.write(dump_args(args))
